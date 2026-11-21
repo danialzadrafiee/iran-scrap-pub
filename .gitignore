@@ -1,0 +1,13 @@
+node_modules/
+ui/dist/
+data/
+proxies.txt
+*.log
+
+
+
+# manual
+FLOW.md
+CLAUDE.md
+AGENTS.md
+proxies.txt

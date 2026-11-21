@@ -1,0 +1,12 @@
+node_modules
+ui/dist
+data
+profile
+proxies.txt
+*.log
+.git
+.github
+.playwright-cli
+tests
+test-results
+playwright-report

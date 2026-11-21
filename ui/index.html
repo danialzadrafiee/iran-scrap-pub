@@ -1,0 +1,311 @@
+<!doctype html>
+<html lang="fa" dir="rtl">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>لیدیاب</title>
+  <link rel="stylesheet" href="./style.css" />
+</head>
+<body class="bg-slate-50 text-slate-800 min-h-screen">
+  <header class="bg-white border-b border-slate-200 sticky top-0 z-20">
+    <div class="max-w-6xl mx-auto px-4 h-14 flex items-center gap-6">
+      <div class="font-bold text-lg text-emerald-700">لیدیاب</div>
+      <nav class="flex gap-1 text-sm" id="nav">
+        <button data-tab="home" class="tab">داشبورد</button>
+        <button data-tab="leads" class="tab">لیدها</button>
+        <button data-tab="history" class="tab">تاریخچه</button>
+        <button data-tab="settings" class="tab">تنظیمات</button>
+        <button data-tab="help" class="tab">راهنما</button>
+      </nav>
+      <div id="hdr-status" class="mr-auto text-xs"></div>
+    </div>
+  </header>
+
+  <main class="max-w-6xl mx-auto px-4 py-6">
+    <!-- ================= داشبورد ================= -->
+    <section id="tab-home" class="space-y-5">
+      <!-- KPI -->
+      <div class="grid grid-cols-2 md:grid-cols-4 gap-3">
+        <div class="kpi">
+          <div class="kpi-label">کل لیدها</div>
+          <div class="kpi-value" id="k-shops">—</div>
+          <div class="kpi-sub"><span id="k-phones">—</span> شماره تلفن</div>
+        </div>
+        <div class="kpi border-emerald-300">
+          <div class="kpi-label">لید جدید (دانلود نشده)</div>
+          <div class="kpi-value text-emerald-600" id="k-new">—</div>
+          <a id="k-dl" href="/api/export?scope=new" class="text-xs link">⬇ دانلود اکسل جدیدها</a>
+        </div>
+        <div class="kpi">
+          <div class="kpi-label">محصولات بررسی‌شده</div>
+          <div class="kpi-value" id="k-products">—</div>
+          <div class="kpi-sub" id="k-pending">—</div>
+        </div>
+        <div class="kpi">
+          <div class="kpi-label">آخرین اجرا</div>
+          <div class="text-lg font-bold mt-1" id="k-last">—</div>
+          <div class="kpi-sub" id="k-last-sub">—</div>
+        </div>
+      </div>
+
+      <!-- اجرا -->
+      <div class="card" id="run-card">
+        <div id="run-idle" class="flex flex-wrap items-center gap-4">
+          <button id="btn-run" class="btn-primary text-base px-6 py-3">🔄 به‌روزرسانی همه دسته‌ها</button>
+          <div class="text-sm text-slate-500" id="run-hint"></div>
+        </div>
+
+        <div id="run-busy" class="hidden space-y-4">
+          <div class="flex flex-wrap items-center gap-3">
+            <span class="spinner"></span>
+            <span class="font-semibold" id="r-phase">در حال اجرا…</span>
+            <span class="text-xs text-slate-400" id="r-elapsed"></span>
+            <button id="btn-stop" class="btn-ghost mr-auto py-1.5">⏸ توقف</button>
+          </div>
+
+          <div class="grid md:grid-cols-3 gap-4">
+            <div class="md:col-span-2 space-y-2">
+              <div class="flex items-baseline justify-between text-sm">
+                <div>دسته: <b id="r-cat">—</b> <span class="text-slate-400" id="r-catidx"></span></div>
+                <div class="text-slate-500" id="r-catnum"></div>
+              </div>
+              <div class="h-3 bg-slate-100 rounded-full overflow-hidden">
+                <div id="r-bar" class="h-full bg-emerald-500 transition-all duration-500" style="width:0%"></div>
+              </div>
+              <div class="text-xs text-slate-500 truncate">محصول فعلی: <span id="r-product" class="text-slate-700">—</span></div>
+              <div class="text-xs text-slate-500 truncate">آخرین لید: <span id="r-event" class="text-emerald-700">—</span></div>
+            </div>
+            <div class="grid grid-cols-3 md:grid-cols-1 gap-2 text-center md:text-right text-sm">
+              <div><span class="text-slate-500">محصول بررسی‌شده:</span> <b id="r-prod">0</b></div>
+              <div><span class="text-slate-500">فروشگاه جدید:</span> <b id="r-new" class="text-emerald-600">0</b></div>
+              <div><span class="text-slate-500">شماره جدید:</span> <b id="r-phones">0</b></div>
+              <div class="col-span-3 md:col-span-1 text-xs text-slate-400">پروکسی: <span id="r-proxy" dir="ltr">—</span></div>
+            </div>
+          </div>
+
+          <div>
+            <div class="text-xs text-slate-400 mb-1">رویدادهای اخیر</div>
+            <div id="r-events" class="text-xs space-y-0.5 font-mono bg-slate-50 rounded-lg p-2 max-h-36 overflow-hidden"></div>
+          </div>
+        </div>
+        <div id="run-wait" class="hidden alert-warn mt-3"></div>
+        <div id="run-error" class="hidden alert-error mt-3"></div>
+      </div>
+
+      <!-- دسته‌ها -->
+      <div class="card p-0">
+        <div class="flex flex-wrap items-center gap-3 p-4 border-b border-slate-100">
+          <div>
+            <div class="font-semibold">دسته‌ها</div>
+            <div class="text-xs text-slate-500">وضعیت اسکن هر دسته — هر بار فقط محصولات جدید بررسی می‌شوند</div>
+          </div>
+          <button id="btn-add-cat" class="btn-ghost mr-auto py-1.5">＋ افزودن / ویرایش دسته‌ها</button>
+        </div>
+        <div class="overflow-x-auto">
+          <table class="w-full text-sm">
+            <thead class="text-slate-500 text-right text-xs bg-slate-50">
+              <tr>
+                <th class="p-3">دسته</th><th class="p-3">وضعیت</th><th class="p-3 min-w-44">پیشرفت محصولات</th>
+                <th class="p-3">لید</th><th class="p-3">آخرین اسکن</th><th class="p-3"></th>
+              </tr>
+            </thead>
+            <tbody id="cat-rows"></tbody>
+          </table>
+        </div>
+        <div id="cat-empty" class="hidden p-10 text-center text-slate-400">
+          هنوز دسته‌ای انتخاب نشده — <button class="link" data-open-picker>افزودن دسته</button>
+        </div>
+      </div>
+
+      <details class="text-sm" id="log-wrap">
+        <summary class="cursor-pointer text-slate-400 hover:text-slate-600">لاگ کامل زنده</summary>
+        <pre id="log" dir="rtl" class="text-right mt-2 h-80 overflow-y-auto bg-slate-900 text-slate-200 rounded-lg p-3 text-xs whitespace-pre-wrap"></pre>
+      </details>
+    </section>
+
+    <!-- ================= لیدها ================= -->
+    <section id="tab-leads" class="hidden space-y-4">
+      <div class="card flex flex-wrap gap-2 items-center">
+        <div class="seg" id="f-scope">
+          <button data-v="new">فقط جدیدها</button>
+          <button data-v="all" class="on">همه</button>
+        </div>
+        <select id="f-type" class="input">
+          <option value="">همه شماره‌ها</option>
+          <option value="landline">تلفن ثابت دارد</option>
+          <option value="mobile">موبایل دارد</option>
+        </select>
+        <select id="f-cat" class="input"><option value="">همه دسته‌ها</option></select>
+        <input id="f-q" class="input flex-1 min-w-40" placeholder="جستجوی نام یا شماره…" />
+        <a id="f-dl" class="btn-primary">⬇ دانلود اکسل</a>
+      </div>
+      <div class="card p-0 overflow-x-auto">
+        <table class="w-full text-sm">
+          <thead class="bg-slate-50 text-slate-500 text-right text-xs">
+            <tr><th class="p-3">فروشگاه</th><th class="p-3">تلفن ثابت</th><th class="p-3">موبایل</th><th class="p-3">دسته</th><th class="p-3">تاریخ پیدا شدن</th></tr>
+          </thead>
+          <tbody id="leads-body"></tbody>
+        </table>
+        <div id="leads-empty" class="hidden p-10 text-center text-slate-400">لیدی پیدا نشد</div>
+      </div>
+      <div id="leads-count" class="text-xs text-slate-400"></div>
+    </section>
+
+    <!-- ================= تاریخچه ================= -->
+    <section id="tab-history" class="hidden space-y-4">
+      <div class="card p-0">
+        <div class="p-4 border-b border-slate-100">
+          <div class="font-semibold">تاریخچه اجراها</div>
+          <div class="text-xs text-slate-500">روی هر اجرا بزنید تا دسته‌ها و لاگ کاملش را ببینید</div>
+        </div>
+        <div class="overflow-x-auto">
+          <table class="w-full text-sm">
+            <thead class="text-slate-500 text-right text-xs bg-slate-50">
+              <tr><th class="p-3">#</th><th class="p-3">شروع</th><th class="p-3">مدت</th><th class="p-3">وضعیت</th><th class="p-3">دسته</th><th class="p-3">محصول</th><th class="p-3">فروشگاه جدید</th><th class="p-3">شماره جدید</th><th class="p-3">نوع</th></tr>
+            </thead>
+            <tbody id="runs"></tbody>
+          </table>
+        </div>
+      </div>
+    </section>
+
+    <!-- ================= تنظیمات ================= -->
+    <section id="tab-settings" class="hidden space-y-4">
+      <div class="card space-y-3">
+        <div>
+          <div class="font-semibold">پروکسی‌ها</div>
+          <div class="text-xs text-slate-500">هر خط یک پروکسی (مثلاً <span dir="ltr">https://host:port</span>). اگر سایت محدود کند، برنامه خودش پروکسی را عوض می‌کند.</div>
+        </div>
+        <textarea id="px-text" rows="5" dir="ltr" class="input w-full font-mono text-xs" placeholder="https://host:port"></textarea>
+        <div class="flex gap-3 items-center">
+          <button id="px-save" class="btn-primary">ذخیره</button>
+          <button id="px-test" class="btn-ghost">تست پروکسی‌ها</button>
+          <span id="px-msg" class="text-sm text-slate-500"></span>
+        </div>
+        <div id="px-list" class="space-y-1 text-xs"></div>
+      </div>
+
+      <div class="card space-y-4">
+        <div class="font-semibold">اجرا</div>
+        <div class="flex flex-wrap gap-6 text-sm">
+          <label class="space-y-1">
+            <div class="text-slate-500">سرعت</div>
+            <div class="seg" id="set-speed">
+              <button data-v="slow">آرام (امن‌تر)</button>
+              <button data-v="normal">عادی</button>
+            </div>
+          </label>
+          <label class="space-y-1">
+            <div class="text-slate-500">حداکثر محصول جدید در هر دسته، هر بار</div>
+            <input id="set-max" type="number" min="10" class="input w-32" />
+          </label>
+          <label class="space-y-1">
+            <div class="text-slate-500">به‌روزرسانی خودکار روزانه ساعت</div>
+            <div class="flex gap-2 items-center">
+              <input id="set-daily" type="time" class="input" />
+              <button id="set-daily-off" class="text-xs text-slate-400 hover:text-red-500">خاموش</button>
+            </div>
+          </label>
+        </div>
+        <button id="set-save" class="btn-primary">ذخیره تنظیمات</button>
+      </div>
+    </section>
+    <!-- ================= راهنما ================= -->
+    <section id="tab-help" class="hidden space-y-4 max-w-3xl">
+      <div class="card space-y-2">
+        <div class="font-semibold text-lg">لیدیاب چه کار می‌کند؟</div>
+        <p class="text-sm leading-7 text-slate-600">لیدیاب شماره تماس فروشگاه‌ها را در دسته‌هایی که انتخاب می‌کنید پیدا می‌کند و به‌صورت یک فایل اکسل مرتب تحویل می‌دهد تا تیم فروش بتواند با آن‌ها تماس بگیرد. هر بار که اجرا می‌شود فقط چیزهای جدید را اضافه می‌کند و هیچ فروشگاهی دو بار در لیست نمی‌آید.</p>
+      </div>
+
+      <div class="card space-y-3">
+        <div class="font-semibold">شروع کار در ۴ قدم</div>
+        <ol class="space-y-3 text-sm leading-7 text-slate-600 list-decimal pr-5">
+          <li><b>پروکسی‌ها را وارد کنید</b> — در تب «تنظیمات»، لیست پروکسی‌ها را پیست کنید و «تست پروکسی‌ها» را بزنید. پروکسی‌های سبز آماده‌اند. بدون پروکسی، سایت بعد از مدت کوتاهی درخواست‌ها را محدود می‌کند.</li>
+          <li><b>دسته‌ها را انتخاب کنید</b> — در «داشبورد» روی «افزودن / ویرایش دسته‌ها» بزنید و دسته‌هایی که مشتری‌هایتان در آن‌ها هستند را تیک بزنید (مثلاً «موبایل و کالای دیجیتال»). تیک یک دسته همه زیرشاخه‌هایش را هم شامل می‌شود.</li>
+          <li><b>«به‌روزرسانی همه دسته‌ها» را بزنید</b> — برنامه شروع به کار می‌کند. پیشرفت را در همان صفحه می‌بینید: کدام دسته، چند محصول از چند تا، و آخرین فروشگاهی که پیدا شد. می‌توانید مرورگر را ببندید؛ کار روی سرور ادامه دارد.</li>
+          <li><b>لیدها را دانلود کنید</b> — دکمه «دانلود اکسل جدیدها» فقط فروشگاه‌هایی را می‌دهد که قبلاً دانلود نکرده‌اید. بعد از دانلود، شمارنده «لید جدید» صفر می‌شود.</li>
+        </ol>
+      </div>
+
+      <div class="card space-y-3">
+        <div class="font-semibold">هر چند وقت یک‌بار لید جدید بگیرید</div>
+        <ul class="space-y-2 text-sm leading-7 text-slate-600 list-disc pr-5">
+          <li>هر وقت خواستید (یک هفته بعد، یک ماه بعد) دوباره «به‌روزرسانی همه دسته‌ها» را بزنید. برنامه از جدیدترین محصولات شروع می‌کند و وقتی به محصولاتی رسید که قبلاً دیده، آن دسته را تمام‌شده می‌داند — پس اجرای دوم خیلی سریع‌تر از اولی است.</li>
+          <li>فروشگاه‌هایی که قبلاً شماره‌شان را گرفته‌اید دوباره بررسی نمی‌شوند.</li>
+          <li>در «تنظیمات» می‌توانید ساعتی را برای <b>به‌روزرسانی خودکار روزانه</b> بگذارید تا لازم نباشد دکمه را بزنید.</li>
+        </ul>
+      </div>
+
+      <div class="card space-y-3">
+        <div class="font-semibold">اگر کار نصفه ماند</div>
+        <p class="text-sm leading-7 text-slate-600">اگر «توقف» را زدید، سرور خاموش شد یا اینترنت قطع شد، نگران نباشید. دفعه بعد که «به‌روزرسانی» را بزنید، برنامه دقیقاً از همان‌جایی که مانده بود ادامه می‌دهد. در جدول دسته‌ها، دسته‌های نیمه‌کاره با برچسب زرد «نیمه‌کاره — X مانده» مشخص‌اند.</p>
+      </div>
+
+      <div class="card space-y-3">
+        <div class="font-semibold">معنی وضعیت‌ها در جدول دسته‌ها</div>
+        <div class="grid sm:grid-cols-2 gap-2 text-sm">
+          <div><span class="chip bg-slate-100 text-slate-600">هنوز اسکن نشده</span> هیچ‌وقت اجرا نشده</div>
+          <div><span class="chip bg-sky-100 text-sky-700">● در حال اسکن</span> همین الان در حال کار</div>
+          <div><span class="chip bg-amber-100 text-amber-700">نیمه‌کاره</span> دفعه بعد ادامه پیدا می‌کند</div>
+          <div><span class="chip bg-emerald-100 text-emerald-700">✓ به‌روز</span> همه‌چیز تا آخرین اجرا بررسی شده</div>
+        </div>
+        <p class="text-sm leading-7 text-slate-600">نوار پیشرفت: <span class="text-emerald-600">سبز</span> = محصولاتی که بررسی شدند، <span class="text-slate-500">خاکستری</span> = محصولاتی که شماره‌ای نداشتند. دکمه «اسکن همین» فقط همان یک دسته را اجرا می‌کند.</p>
+      </div>
+
+      <div class="card space-y-3">
+        <div class="font-semibold">پیام‌های رایج</div>
+        <ul class="space-y-2 text-sm leading-7 text-slate-600 list-disc pr-5">
+          <li><b>«همه پروکسی‌ها موقتاً محدود شده‌اند»</b> — سایت پروکسی‌ها را برای مدتی محدود کرده. برنامه خودش صبر می‌کند و ادامه می‌دهد؛ یا پروکسی‌های بیشتری اضافه کنید.</li>
+          <li><b>«کپچا → پروکسی بعدی»</b> — عادی است؛ برنامه خودکار پروکسی را عوض می‌کند.</li>
+          <li><b>«هیچ پروکسی سالمی نمانده»</b> — همه پروکسی‌ها خراب‌اند. در تنظیمات پروکسی جدید وارد کنید و «تست» بزنید.</li>
+          <li>سرعت «آرام» در تنظیمات احتمال محدود شدن را کمتر می‌کند ولی کار طولانی‌تر می‌شود.</li>
+        </ul>
+      </div>
+
+      <div class="card space-y-2">
+        <div class="font-semibold">تاریخچه</div>
+        <p class="text-sm leading-7 text-slate-600">در تب «تاریخچه» همه اجراهای قبلی با تاریخ، مدت، تعداد فروشگاه و شماره جدید ثبت است. روی هر اجرا بزنید تا ببینید کدام دسته‌ها بررسی شدند و گزارش کامل آن اجرا را بخوانید.</p>
+      </div>
+    </section>
+  </main>
+
+  <!-- انتخاب دسته‌ها -->
+  <div id="picker" class="modal hidden">
+    <div class="modal-box max-w-2xl">
+      <div class="flex items-center justify-between">
+        <div>
+          <div class="font-semibold">انتخاب دسته‌ها</div>
+          <div class="text-xs text-slate-500">تیک یک دسته شامل همه زیرشاخه‌هایش می‌شود</div>
+        </div>
+        <button data-close class="text-slate-400 hover:text-slate-700 text-2xl leading-none">×</button>
+      </div>
+      <input id="cat-q" class="input w-full" placeholder="جستجو… (مثلاً: موبایل، لوازم خانگی)" />
+      <div id="cat-tree" class="h-[26rem] overflow-y-auto border border-slate-100 rounded-lg p-2 text-sm"></div>
+      <div class="flex items-center gap-3">
+        <button id="cat-save" class="btn-primary">ذخیره (<span id="cat-count">0</span> دسته)</button>
+        <button id="cat-clear" class="btn-ghost">برداشتن همه</button>
+        <button id="cat-refresh" class="text-xs text-slate-400 hover:text-slate-600 mr-auto">به‌روزرسانی لیست دسته‌ها از سایت</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- جزئیات اجرا -->
+  <div id="run-modal" class="modal hidden">
+    <div class="modal-box max-w-3xl">
+      <div class="flex items-center justify-between">
+        <div class="font-semibold" id="rm-title"></div>
+        <button data-close class="text-slate-400 hover:text-slate-700 text-2xl leading-none">×</button>
+      </div>
+      <div id="rm-summary" class="text-sm text-slate-600"></div>
+      <table class="w-full text-sm">
+        <thead class="text-slate-500 text-right text-xs"><tr><th class="p-2">دسته</th><th class="p-2">محصول دیده‌شده</th><th class="p-2">جدید</th><th class="p-2">نتیجه</th></tr></thead>
+        <tbody id="rm-cats"></tbody>
+      </table>
+      <pre id="rm-log" dir="rtl" class="text-right h-80 overflow-y-auto bg-slate-900 text-slate-200 rounded-lg p-3 text-xs whitespace-pre-wrap"></pre>
+    </div>
+  </div>
+
+  <div id="toast" class="fixed bottom-4 left-1/2 -translate-x-1/2 hidden rounded-lg bg-slate-800 text-white px-4 py-2 text-sm shadow-lg z-50"></div>
+  <script type="module" src="./main.js"></script>
+</body>
+</html>

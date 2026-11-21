@@ -1,0 +1,10 @@
+services:
+  torob-leads:
+    build: .
+    container_name: torob-leads
+    ports:
+      - "8080:8080"
+    volumes:
+      - ./data:/data        # پروفایل‌های مرورگر (دیتابیس روی Neon است)
+    shm_size: 1gb           # Chromium در داکر به shm بیشتر نیاز دارد
+    restart: unless-stopped
